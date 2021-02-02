@@ -1,8 +1,8 @@
 import os
 
-from flask import ( 
-    Flask , flash, render_template, 
-    redirect, request, session, url_for) 
+from flask import (
+    Flask, flash, render_template,
+    redirect, request, session, url_for)
 from flask_pymongo import PyMongo
 from bson.objectid import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,6 +27,26 @@ def get_tasks():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        # Check if username already exists in db
+        existing_user = mongo.db.users.find_one(
+            {"username": request.form.get("username").lower()})
+
+        # Check if user exists
+        if existing_user:
+            flash("Username already exists")
+            return redirect(url_for('register'))
+
+        register = {
+            "username": request.form.get("username").lower(),
+            "password": generate_password_hash(request.form.get("password"))
+        }
+        #We call the users collection on MongoDB and use the insert method
+        mongo.db.users.insert_one(register)
+
+        # Put the new user into 'session' cookie (look at the begining of the code)
+        session["user"] = request.form.get("username").lower()
+        flash("Registration Successfull")
     return render_template("register.html")
 
 
